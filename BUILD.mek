@@ -1,0 +1,38 @@
+# mekanism builds itself with this file. First build without mekanism: see README.md
+var cxx: {var:cxx.detect}
+
+switch cxxflags {var:platform}:
+  case macos:   -O3 -std=c++17 -Wall -Wextra -I. -D_DARWIN_C_SOURCE
+  case linux:   -O3 -std=c++17 -Wall -Wextra -I. -D_XOPEN_SOURCE=700
+  case freebsd: -O3 -std=c++17 -Wall -Wextra -I. -I/usr/local/include -D_XOPEN_SOURCE=700
+  case netbsd:  -O3 -std=c++17 -Wall -Wextra -I. -I/usr/pkg/include -D_XOPEN_SOURCE=700
+  default:      -O2 -std=c++17 -Wall -I.
+
+switch linkflags {var:platform}:
+  case freebsd: -pthread -L/usr/local/lib
+  case netbsd:  -pthread -L/usr/pkg/lib
+  default:      -pthread
+
+console("compiler: {var:cxx}")
+
+# compile runs once per source, link once per target
+func compile: {var:cxx} {var:cxxflags} -MMD -MF {depfile} -c {source} -o {object}
+func link:    {var:cxx} {objects} -o {output0} {var:linkflags}
+
+default_target: mekanism
+
+target mekanism:
+  sources: "
+    mekanism.cxx
+    sources/log.cxx
+    sources/util.cxx
+    sources/expand.cxx
+    sources/builtins.cxx
+    sources/config.cxx
+    sources/plan.cxx
+    sources/cache.cxx
+    sources/run.cxx
+  "
+  compile: compile
+  use: link
+  outputs: build/mekanism
